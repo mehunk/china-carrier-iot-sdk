@@ -1,0 +1,10 @@
+# 依赖包
+node_modules
+
+# IDE
+.idea
+
+# 编译目录
+lib
+
+yarn.lock

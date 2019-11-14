@@ -1,0 +1,6 @@
+# 依赖包
+node_modules
+
+# 编译后的包
+lib
+!packages
