@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "lint": "npx eslint --ext=ts .",
-    "prettier": "prettier --write **/*.ts"
+    "prettier": "prettier --write '**/*.ts'"
   },
   "repository": {
     "type": "git",
@@ -13,8 +13,10 @@
   "author": "Wei Qiang<mehunk@163.com>",
   "license": "ISC",
   "devDependencies": {
+    "@types/lodash": "^4.14.149",
     "@types/node": "^12.12.0",
     "@types/superagent": "^4.1.4",
+    "@types/uuid": "^3.4.6",
     "@typescript-eslint/eslint-plugin": "^2.7.0",
     "@typescript-eslint/parser": "^2.7.0",
     "eslint": "^6.6.0",
