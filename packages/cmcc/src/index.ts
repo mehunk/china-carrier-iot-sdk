@@ -15,7 +15,9 @@ import {
   MobileNoType,
   OperationType,
   SetStatusResponse,
-  Status
+  Status,
+  AxiosRequestConfigExtend,
+  AxiosResponseExtend
 } from './types';
 
 class AccessToken implements AccessTokenObj {
@@ -35,6 +37,34 @@ export interface CustomOptions {
   getAccessToken?: () => Promise<AccessToken>;
   setAccessToken?: (token: AccessToken) => Promise<void>;
   log?: (obj: object) => Promise<void>;
+}
+
+function log() {
+  return function(target: object, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
+    const method = descriptor.value;
+    descriptor.value = async function(...args: any[]): Promise<AxiosResponseExtend> {
+      let res: AxiosResponseExtend;
+      try {
+        res = await method.apply(this, args);
+      } catch (e) {
+        // 打印网络请求错误日志
+        const httpObj = createHttpLogObjFromError(e);
+        if (e.response) {
+          httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
+        }
+        this.log(httpObj);
+        throw e;
+      }
+
+      // 打印网络请求日志
+      const httpObj = createHttpLogObjFromResponse(res);
+      this.log(httpObj);
+
+      return res;
+    };
+
+    return descriptor;
+  };
 }
 
 export class CmccIotClient {
@@ -80,6 +110,11 @@ export class CmccIotClient {
       baseURL: this.rootEndpoint,
       timeout: this.maxTimeoutMs
     });
+    this.httpClient.interceptors.request.use(config => {
+      (config as AxiosRequestConfigExtend).requestTime = new Date();
+      (config as AxiosRequestConfigExtend).traceId = uuidv4();
+      return config;
+    });
   }
 
   private async getAccessToken(): Promise<AccessToken> {
@@ -107,6 +142,13 @@ export class CmccIotClient {
     });
   }
 
+  @log()
+  private _httpRequest(path: string, queryObj: QueryObj): Promise<AxiosResponseExtend> {
+    return this.httpClient.get(path, {
+      params: queryObj
+    });
+  }
+
   /**
    * 接口请求
    *
@@ -116,38 +158,27 @@ export class CmccIotClient {
    * @returns 响应体
    */
   private async request(path: string, methodQueryObj: QueryObj, retryTimes = this.maxRetryTimes): Promise<object> {
-    let res;
+    let res: AxiosResponseExtend;
     const accessToken = await this.ensureAccessToken();
     const systemQueryObj: QueryObj = {
       transid: this.getTransId(),
       token: accessToken.token
     };
     const queryObj = Object.assign({}, methodQueryObj, systemQueryObj);
-    const traceId = uuidv4();
-    const requestTime = new Date();
     try {
-      res = await this.httpClient.get(path, {
-        params: queryObj
-      });
+      res = await this._httpRequest(path, queryObj);
     } catch (e) {
-      const httpObj = createHttpLogObjFromError(traceId, requestTime, e);
       let errMessage: string;
       if (e.response) {
         // 如果是响应异常
-        httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
-        errMessage = `接口响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${traceId}！`;
+        errMessage = `接口响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${e.config.traceId}！`;
       } else {
         // 如果是请求异常
-        errMessage = `接口请求失败！异常描述：${e.message}，traceId：${traceId}！`;
+        errMessage = `接口请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
       }
-      this.log(httpObj);
       // 抛出新的异常
       throw new Error(errMessage);
     }
-
-    // 打印日志
-    const httpObj = createHttpLogObjFromResponse(traceId, requestTime, res);
-    this.log(httpObj);
 
     const resData = res.data;
 
@@ -158,7 +189,7 @@ export class CmccIotClient {
         return this.getToken().then(() => this.request(path, methodQueryObj, retryTimes - 1));
       }
       throw new Error(
-        `接口请求结果失败！异常描述：结果码 ${resData.status}，异常原因 ${resData.message}，traceId：${traceId}！`
+        `接口请求结果失败！异常描述：结果码 ${resData.status}，异常原因 ${resData.message}，traceId：${res.config.traceId}！`
       );
     }
 
@@ -193,44 +224,35 @@ export class CmccIotClient {
    * @returns accessToken
    */
   private async getToken(): Promise<AccessToken> {
-    const path = '/get/token';
-    const traceId = uuidv4();
-    const requestTime = new Date();
-    let res;
+    let res: AxiosResponseExtend;
     try {
-      res = await this.httpClient.get(path, {
-        params: {
-          appid: this.appId,
-          password: this.password,
-          transid: this.getTransId()
-        }
+      res = await this._httpRequest('/get/token', {
+        appid: this.appId,
+        password: this.password,
+        transid: this.getTransId()
       });
     } catch (e) {
-      const httpObj = createHttpLogObjFromError(traceId, requestTime, e);
       let errMessage: string;
       if (e.response) {
-        httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
-        errMessage = `获取 Token 响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${traceId}！`;
+        errMessage = `获取 Token 响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${e.config.traceId}！`;
       } else {
-        errMessage = `获取 Token 请求失败！异常描述：${e.message}，traceId：${traceId}！`;
+        errMessage = `获取 Token 请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
       }
-      this.log(httpObj);
       throw new Error(errMessage);
     }
 
-    const httpObj = createHttpLogObjFromResponse(traceId, requestTime, res);
-    this.log(httpObj);
-
     const resData = res.data;
     if (resData.status !== '0') {
-      throw new Error(`获取 Token 失败！结果码 ${resData.status}，异常原因 ${resData.message}，traceId：${traceId}！`);
+      throw new Error(
+        `获取 Token 失败！结果码 ${resData.status}，异常原因 ${resData.message}，traceId：${res.config.traceId}！`
+      );
     }
 
     let token: string;
     try {
       token = resData.result[0].token;
     } catch (e) {
-      throw new Error(`获取 Token 失败！异常描述：接口返回格式不正确，traceId：${traceId}！`);
+      throw new Error(`获取 Token 失败！异常描述：接口返回格式不正确，traceId：${res.config.traceId}！`);
     }
 
     const expireTime = Date.now() + (60 - 10) * 60 * 1000;

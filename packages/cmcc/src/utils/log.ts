@@ -1,19 +1,20 @@
 import * as _ from 'lodash';
-import { AxiosError, AxiosResponse } from 'axios';
-
-import { HttpLogObjParams, HttpLogObj } from '../types';
+import { HttpLogObjParams, HttpLogObj, AxiosErrorExtend, AxiosResponseExtend } from '../types';
 
 export function createHttpLogObj(httpLogObjParams: HttpLogObjParams): HttpLogObj {
+  const createdAt = new Date();
+  const totalTime = createdAt.getTime() - httpLogObjParams.requestTime.getTime();
   return {
-    createdAt: new Date(),
+    createdAt,
+    totalTime,
     ...httpLogObjParams
   };
 }
 
-export function createHttpLogObjFromError(traceId: string, requestTime: Date, err: AxiosError): HttpLogObj {
+export function createHttpLogObjFromError(err: AxiosErrorExtend): HttpLogObj {
   return createHttpLogObj({
-    traceId,
-    requestTime,
+    traceId: err.config.traceId,
+    requestTime: err.config.requestTime,
     isError: true,
     error: {
       message: err.message
@@ -22,11 +23,11 @@ export function createHttpLogObjFromError(traceId: string, requestTime: Date, er
   });
 }
 
-export function createHttpLogObjFromResponse(traceId: string, requestTime: Date, response: AxiosResponse): HttpLogObj {
+export function createHttpLogObjFromResponse(response: AxiosResponseExtend): HttpLogObj {
   return createHttpLogObj({
-    traceId,
+    traceId: response.config.traceId,
     isError: false,
-    requestTime,
+    requestTime: response.config.requestTime,
     request: _.pick(response.config, ['url', 'method', 'params', 'headers', 'data']),
     response: _.pick(response, ['status', 'headers', 'data'])
   });

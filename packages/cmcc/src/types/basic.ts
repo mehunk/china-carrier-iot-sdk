@@ -32,4 +32,5 @@ export interface HttpLogObjParams {
 
 export interface HttpLogObj extends HttpLogObjParams {
   createdAt: Date;
+  totalTime: number;
 }
