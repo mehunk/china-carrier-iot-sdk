@@ -1,7 +1,7 @@
-import { iccid, options } from './sample';
+import { iccid, customOptions, options } from './sample';
 import { CuccIotClient, Status } from '../src';
 
-const cuccIotClient = new CuccIotClient(options);
+const cuccIotClient = new CuccIotClient(options, customOptions);
 cuccIotClient
   .setDetail(iccid, {
     status: Status.Deactivated

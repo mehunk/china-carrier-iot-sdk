@@ -7,5 +7,8 @@ import { GetDetailResponse } from '../types';
  */
 export function getDetail(iccid: string): Promise<GetDetailResponse> {
   const path = `/devices/${iccid}`;
-  return this.get(path);
+  return this.request({
+    method: 'GET',
+    url: path
+  });
 }

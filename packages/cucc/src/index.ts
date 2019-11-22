@@ -1,8 +1,40 @@
-import * as request from 'superagent';
+import * as _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+import axios, { AxiosRequestConfig, AxiosInstance } from 'axios';
+import { sleep } from 'sleep-ts';
 
 import config from './config';
 import * as apis from './mixins';
-import { Options, GetDetailResponse, GetUsageResponse, SetDetailResponse, SetDetailParams, Status } from './types';
+import { createHttpLogObjFromError, createHttpLogObjFromResponse } from './utils/log';
+import { Options, CustomOptions, GetDetailResponse, GetUsageResponse, SetDetailResponse, SetDetailParams, Status, AxiosRequestConfigExtend, AxiosResponseExtend } from './types';
+
+function log() {
+  return function(target: object, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
+    const method = descriptor.value;
+    descriptor.value = async function(...args: any[]): Promise<AxiosResponseExtend> {
+      let res: AxiosResponseExtend;
+      try {
+        res = await method.apply(this, args);
+      } catch (e) {
+        // 打印网络请求错误日志
+        const httpObj = createHttpLogObjFromError(e);
+        if (e.response) {
+          httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
+        }
+        this.log(httpObj);
+        throw e;
+      }
+
+      // 打印网络请求日志
+      const httpObj = createHttpLogObjFromResponse(res);
+      this.log(httpObj);
+
+      return res;
+    };
+
+    return descriptor;
+  };
+}
 
 export class CuccIotClient {
   [key: string]: any;
@@ -11,16 +43,82 @@ export class CuccIotClient {
   private username: string;
   private key: string;
   private rootEndpoint: string;
+  private maxRetryTimes = 3;
+  private maxTimeoutMs = 60 * 1000;
+  private httpClient: AxiosInstance;
 
   public getDetail: (iccid: string) => Promise<GetDetailResponse>;
   public setDetail: (iccid: string, detailParams: SetDetailParams) => Promise<SetDetailResponse>;
   public getUsage: (iccid: string) => Promise<GetUsageResponse>;
 
-  constructor(options: Options) {
+  constructor(options: Options, customOptions?: CustomOptions) {
     this.username = options.username;
     this.key = options.key;
     this.rootEndpoint = options.rootEndpoint || config.rootEndpoint;
     this.authStr = ['Basic', Buffer.from(this.username + ':' + this.key).toString('base64')].join(' ');
+
+    const customOptionsKeys = ['maxRetryTimes', 'maxTimeoutMs', 'log'];
+
+    for (const [key, value] of Object.entries(_.pick(customOptions, customOptionsKeys))) {
+      this[key] = value;
+    }
+
+    this.httpClient = axios.create({
+      baseURL: this.rootEndpoint,
+      timeout: this.maxTimeoutMs
+    });
+    this.httpClient.interceptors.request.use(config => {
+      (config as AxiosRequestConfigExtend).requestTime = new Date();
+      (config as AxiosRequestConfigExtend).traceId = uuidv4();
+      return config;
+    });
+  }
+
+  /**
+   * 默认打印日志方法，允许被自定义方法覆盖
+   *
+   * @param obj - 要打印的对象
+   */
+  private async log(obj: object): Promise<void> {
+    console.dir(obj, { depth: null });
+  }
+
+  @log()
+  private _httpRequest(config: AxiosRequestConfig): Promise<AxiosResponseExtend> {
+    return this.httpClient.request({
+      headers: {
+        'Authorization': this.authStr
+      },
+      ...config
+    });
+  }
+
+  private async request(config: AxiosRequestConfig & { retryTimes?: number }): Promise<any> {
+    let res: AxiosResponseExtend;
+    try {
+      res = await this._httpRequest(config);
+      return res.data;
+    } catch (e) {
+      let errMessage: string;
+      if (e.response) {
+        if (e.response.status === 429 && // 如果是超过单位时间请求次数限制
+          (typeof config.retryTimes === 'undefined' || config.retryTimes > 0) // 并且重试次数不存在或者大于 0
+        ) {
+          // 休眠一段时间以后再请求
+          const sleepMs = 1000;
+          config.retryTimes = this.maxRetryTimes - 1;
+          return sleep(sleepMs).then(() => this.request(config));
+        }
+
+        errMessage = `接口响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${e.config.traceId}！`;
+        if (e.response.data) {
+          errMessage += `错误码：${e.response.data.errorCode}，错误信息：${e.response.data.errorMessage}！`
+        }
+      } else {
+        errMessage = `接口请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
+      }
+      throw new Error(errMessage);
+    }
   }
 
   /**
@@ -34,45 +132,6 @@ export class CuccIotClient {
       }
       CuccIotClient.prototype[key] = obj[key];
     });
-  }
-
-  private async get(path: string): Promise<object> {
-    let res;
-    try {
-      res = await request.get(this.rootEndpoint + path).set('Authorization', this.authStr);
-    } catch (e) {
-      this.handleRequestException(e);
-    }
-
-    return res.body;
-  }
-
-  private async put(path: string, body: object): Promise<object> {
-    let res;
-    try {
-      res = await request
-        .put(this.rootEndpoint + path)
-        .set('Authorization', this.authStr)
-        .send(body);
-    } catch (e) {
-      this.handleRequestException(e);
-    }
-
-    return res.body;
-  }
-
-  private handleRequestException(e: any): void {
-    // 处理异常
-    let str;
-    if (e.status === 401) {
-      str = '接口请求失败！认证失败！用户名或 key 错误！';
-    } else {
-      const { body } = e.response;
-      str = `接口请求失败！异常描述：错误码 ${body.errorCode}，错误信息 ${body.errorMessage}。`;
-    }
-
-    // 抛出新的异常
-    throw new Error(str);
   }
 }
 

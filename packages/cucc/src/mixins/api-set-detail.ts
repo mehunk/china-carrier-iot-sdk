@@ -8,5 +8,9 @@ import { SetDetailParams, SetDetailResponse } from '../types';
  */
 export function setDetail(iccid: string, detailParams: SetDetailParams): Promise<SetDetailResponse> {
   const path = `/devices/${iccid}`;
-  return this.put(path, detailParams);
+  return this.request({
+    method: 'PUT',
+    url: path,
+    data: detailParams
+  });
 }

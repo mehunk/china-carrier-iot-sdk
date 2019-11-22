@@ -1,7 +1,7 @@
-import { options, iccid } from './sample';
+import { options, customOptions, iccid } from './sample';
 import { CuccIotClient } from '../src';
 
-const cuccIotClient = new CuccIotClient(options);
+const cuccIotClient = new CuccIotClient(options, customOptions);
 cuccIotClient
   .getDetail(iccid)
   .then(res => console.log(res))
