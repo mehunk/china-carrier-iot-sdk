@@ -5,7 +5,7 @@ export interface Options {
 }
 
 export interface CustomOptions {
-  log?: (obj: Object) => Promise<void>;
+  log?: (obj: object) => Promise<void>;
 }
 
 export interface HttpLogObjParams {

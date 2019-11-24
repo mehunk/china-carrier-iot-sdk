@@ -6,7 +6,17 @@ import { sleep } from 'sleep-ts';
 import config from './config';
 import * as apis from './mixins';
 import { createHttpLogObjFromError, createHttpLogObjFromResponse } from './utils/log';
-import { Options, CustomOptions, GetDetailResponse, GetUsageResponse, SetDetailResponse, SetDetailParams, Status, AxiosRequestConfigExtend, AxiosResponseExtend } from './types';
+import {
+  Options,
+  CustomOptions,
+  GetDetailResponse,
+  GetUsageResponse,
+  SetDetailResponse,
+  SetDetailParams,
+  Status,
+  AxiosRequestConfigExtend,
+  AxiosResponseExtend
+} from './types';
 
 function log() {
   return function(target: object, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
@@ -87,7 +97,7 @@ export class CuccIotClient {
   private _httpRequest(config: AxiosRequestConfig): Promise<AxiosResponseExtend> {
     return this.httpClient.request({
       headers: {
-        'Authorization': this.authStr
+        Authorization: this.authStr
       },
       ...config
     });
@@ -101,18 +111,19 @@ export class CuccIotClient {
     } catch (e) {
       let errMessage: string;
       if (e.response) {
-        if (e.response.status === 429 && // 如果是超过单位时间请求次数限制
+        if (
+          e.response.status === 429 && // 如果是超过单位时间请求次数限制
           (typeof config.retryTimes === 'undefined' || config.retryTimes > 0) // 并且重试次数不存在或者大于 0
         ) {
           // 休眠一段时间以后再请求
           const sleepMs = 1000;
-          config.retryTimes = this.maxRetryTimes - 1;
+          config.retryTimes = typeof config.retryTimes === 'undefined' ? this.maxRetryTimes - 1 : config.retryTimes - 1;
           return sleep(sleepMs).then(() => this.request(config));
         }
 
         errMessage = `接口响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${e.config.traceId}！`;
-        if (e.response.data) {
-          errMessage += `错误码：${e.response.data.errorCode}，错误信息：${e.response.data.errorMessage}！`
+        if (typeof e.response.data === 'object') {
+          errMessage += `错误码：${e.response.data.errorCode}，错误信息：${e.response.data.errorMessage}！`;
         }
       } else {
         errMessage = `接口请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
