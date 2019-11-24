@@ -6,16 +6,19 @@ import {
   OperationType,
   GetDetailResponse,
   SetStatusResponse,
-  Status
+  Status,
+  CustomOptions as SoapCustomOptions
 } from './soap-client';
 import {
   RestClient,
   MobileNoType as RestClientMobileNoType,
   GetUsageType,
   GetUsageResponse,
-  CustomOptions
+  CustomOptions as RestCustomOptions
 } from './rest-client';
 import { ClientOptions, Options } from './types';
+
+export interface CustomOptions extends RestCustomOptions, SoapCustomOptions {}
 
 export class CtccIotClient {
   private readonly soapOptions: ClientOptions;

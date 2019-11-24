@@ -148,4 +148,4 @@ export class CuccIotClient {
 
 CuccIotClient.mixin(apis);
 
-export { Options, Status };
+export { Options, Status, CustomOptions };
