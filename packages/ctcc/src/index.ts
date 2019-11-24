@@ -1,31 +1,36 @@
+import * as _ from 'lodash';
+
 import {
   SoapClient,
   MobileNoType as SoapClientMobileNoType,
   OperationType,
   GetDetailResponse,
-  SetStatusResponse
+  SetStatusResponse,
+  Status
 } from './soap-client';
-import { RestClient, MobileNoType as RestClientMobileNoType, GetUsageType, GetUsageResponse } from './rest-client';
+import {
+  RestClient,
+  MobileNoType as RestClientMobileNoType,
+  GetUsageType,
+  GetUsageResponse,
+  CustomOptions
+} from './rest-client';
 import { ClientOptions, Options } from './types';
-import config from './config';
 
 export class CtccIotClient {
   private readonly soapOptions: ClientOptions;
   private readonly restOptions: ClientOptions;
+  private readonly customOptions: CustomOptions;
   private readonly restClient: RestClient;
   private readonly soapClient: SoapClient;
 
-  constructor(options: Options) {
+  constructor(options: Options, customOptions: CustomOptions = {}) {
     this.soapOptions = options.soap;
     this.restOptions = options.rest;
+    this.customOptions = customOptions;
 
-    this.restClient = new RestClient(this.restOptions.username, this.restOptions.password, config.restRootEndpoint);
-
-    this.soapClient = new SoapClient(this.soapOptions.username, this.soapOptions.password, config.soapRootEndpoints);
-  }
-
-  async init(): Promise<void> {
-    await this.soapClient.init();
+    this.soapClient = new SoapClient(this.soapOptions, _.pick(this.customOptions, ['maxTimeoutMs', 'log']));
+    this.restClient = new RestClient(this.restOptions, this.customOptions);
   }
 
   async getDetail(type: SoapClientMobileNoType, id: string): Promise<GetDetailResponse> {
@@ -65,4 +70,4 @@ export class CtccIotClient {
   }
 }
 
-export { RestClientMobileNoType, SoapClientMobileNoType, GetUsageType, OperationType };
+export { ClientOptions, Options, RestClientMobileNoType, SoapClientMobileNoType, GetUsageType, OperationType, Status };

@@ -5,17 +5,17 @@ export async function setStatus(
   id: string,
   operationType: OperationType
 ): Promise<SetStatusResponse> {
+  const res = await this.request('/SubscriptionManagement', 'RequestSubscriptionStatusChange', {
+    resource: {
+      id,
+      type
+    },
+    subscriptionStatus: operationType
+  });
+
   try {
-    const client = await this.getClient();
-    const res = await client.RequestSubscriptionStatusChangeAsync({
-      resource: {
-        id,
-        type
-      },
-      subscriptionStatus: operationType
-    });
-    return res[0];
+    return res.data;
   } catch (e) {
-    console.error(e);
+    throw new Error(`接口响应结果格式异常！traceId：${res.traceId}`);
   }
 }

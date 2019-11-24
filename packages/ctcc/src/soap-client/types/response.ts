@@ -1,8 +1,8 @@
 export enum Status {
   Active = 'Active', // 激活
-  Pause = 'Pause', // 停机，文档上写的是 Paused，但实际结果应该是 Pause
-  Deactivated = 'Deactivated',
-  Terminated = 'Terminated'
+  Pause = 'Pause', // 停机保号，文档上写的是 Paused，但实际结果应该是 Pause
+  Deactivated = 'Deactivated', // 普通停机
+  Terminated = 'Terminated' // 已拆机
 }
 
 export interface GetDetailResponse {

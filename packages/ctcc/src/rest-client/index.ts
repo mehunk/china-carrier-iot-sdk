@@ -1,7 +1,19 @@
-import * as request from 'superagent';
+import * as _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 import * as apis from './mixins';
-import { AccessTokenObj, MobileNoType, GetUsageType, GetUsageResponse } from './types';
+import {
+  Options,
+  AccessTokenObj,
+  MobileNoType,
+  GetUsageType,
+  GetUsageResponse,
+  AxiosRequestConfigExtend,
+  AxiosResponseExtend
+} from './types';
+import config from './config';
+import { createHttpLogObjFromError, createHttpLogObjFromResponse } from './utils/log';
 
 class AccessToken implements AccessTokenObj {
   constructor(
@@ -14,12 +26,53 @@ class AccessToken implements AccessTokenObj {
   }
 }
 
+export interface CustomOptions {
+  maxRetryTimes?: number; // 最大重试次数
+  maxTimeoutMs?: number; // 最大超时时间，单位毫秒
+  getAccessToken?: () => Promise<AccessToken>;
+  setAccessToken?: (token: AccessToken) => Promise<void>;
+  log?: (obj: object) => Promise<void>;
+}
+
+function log() {
+  return function(target: object, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
+    const method = descriptor.value;
+    descriptor.value = async function(...args: any[]): Promise<AxiosResponseExtend> {
+      let res: AxiosResponseExtend;
+      try {
+        res = await method.apply(this, args);
+      } catch (e) {
+        // 打印网络请求错误日志
+        const httpObj = createHttpLogObjFromError(e);
+        if (e.response) {
+          httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
+        }
+        this.log(httpObj);
+        throw e;
+      }
+
+      // 打印网络请求日志
+      const httpObj = createHttpLogObjFromResponse(res);
+      this.log(httpObj);
+
+      return res;
+    };
+
+    return descriptor;
+  };
+}
+
 export class RestClient {
   [key: string]: any;
 
+  private readonly httpClient: AxiosInstance;
+  private readonly username: string;
+  private readonly password: string;
+  private readonly rootEndpoint: string;
   private store: AccessToken;
-  private readonly getAccessToken: () => Promise<AccessToken>;
-  private readonly saveAccessToken: (accessToken: AccessToken) => Promise<void>;
+  private maxRetryTimes = 3;
+  private maxTimeoutMs = 60 * 1000;
+
   public getUsage: (
     mobileNoType: MobileNoType,
     id: string,
@@ -29,28 +82,44 @@ export class RestClient {
     type: GetUsageType[]
   ) => Promise<GetUsageResponse>;
 
-  constructor(
-    private username: string,
-    private password: string,
-    private rootEndpoint: string,
-    getAccessToken?: () => Promise<AccessToken>,
-    saveAccessToken?: (token: AccessToken) => Promise<void>
-  ) {
-    this.getAccessToken = getAccessToken
-      ? async function(): Promise<AccessToken> {
-          const accessTokenObj = await getAccessToken();
-          return new AccessToken(accessTokenObj.token, accessTokenObj.expireTime);
-        }
-      : this._getAccessToken;
-    this.saveAccessToken = saveAccessToken || this._setAccessToken;
+  constructor(options: Options, customOptions: CustomOptions = {}) {
+    this.username = options.username;
+    this.password = options.password;
+    this.rootEndpoint = options.rootEndpoint || config.rootEndpoint;
+    const customOptionsKeys = ['maxRetryTimes', 'maxTimeoutMs', 'getAccessToken', 'setAccessToken', 'log'];
+
+    for (const [key, value] of Object.entries(_.pick(customOptions, customOptionsKeys))) {
+      if (key === 'getAccessToken') {
+        this.getAccessToken = async function(): Promise<AccessToken> {
+          const accessTokenObj = await customOptions.getAccessToken();
+          return accessTokenObj ? new AccessToken(accessTokenObj.token, accessTokenObj.expireTime) : null;
+        };
+      } else {
+        this[key] = value;
+      }
+    }
+
+    this.httpClient = axios.create({
+      baseURL: this.rootEndpoint,
+      timeout: this.maxTimeoutMs
+    });
+    this.httpClient.interceptors.request.use(config => {
+      (config as AxiosRequestConfigExtend).requestTime = new Date();
+      (config as AxiosRequestConfigExtend).traceId = uuidv4();
+      return config;
+    });
   }
 
-  private async _getAccessToken(): Promise<AccessToken> {
+  private async getAccessToken(): Promise<AccessToken> {
     return this.store;
   }
 
-  private async _setAccessToken(accessToken: AccessToken): Promise<void> {
+  private async setAccessToken(accessToken: AccessToken): Promise<void> {
     this.store = accessToken;
+  }
+
+  private async log(obj: object): Promise<void> {
+    console.dir(obj, { depth: null });
   }
 
   /**
@@ -66,56 +135,95 @@ export class RestClient {
     return this.getToken();
   }
 
+  @log()
+  private _httpRequest(config: AxiosRequestConfig): Promise<AxiosResponseExtend> {
+    return this.httpClient.request({
+      method: 'POST',
+      ...config
+    });
+  }
+
   /**
    * 从服务器获取 token
    *
    * @returns accessToken
    */
   private async getToken(): Promise<AccessToken> {
-    const url = this.rootEndpoint + '/login';
-    let res;
-    try {
-      res = await request.post(url).send({
+    const config = {
+      url: '/login',
+      data: {
         username: this.username,
         password: this.password
-      });
+      }
+    };
+    let res: AxiosResponseExtend;
+    try {
+      res = await this._httpRequest(config);
     } catch (e) {
-      // 记录状态码、响应报文
-      throw new Error(`获取 Token 发生异常！状态码：${e.status}，异常描述：${e.response.body.msg}。`);
+      let errMessage: string;
+      if (e.response) {
+        errMessage = `获取 Token 响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${e.config.traceId}！`;
+        if (typeof e.response.data === 'object') {
+          errMessage += `错误码：${e.response.data.status}，错误信息：${e.response.data.msg}！`;
+        }
+      } else {
+        errMessage = `获取 Token 请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
+      }
+      throw new Error(errMessage);
     }
 
-    const response = res.body;
+    const resData = res.data;
 
-    if (response.status !== 200) {
-      throw new Error(`获取 Token 发生异常！异常描述：状态码 ${response.status}, 异常原因 "${response.msg}"。`);
+    if (resData.status !== 200) {
+      throw new Error(
+        `获取 Token 失败！结果码 ${resData.status}，异常原因 ${resData.msg}，traceId：${res.config.traceId}！`
+      );
     }
 
-    const { token, expirationTime } = response.data;
+    const { token, expirationTime } = resData.data;
     // 失效时间较接口返回的失效时间提前 10 分钟
     const expireTime = Date.now() + Math.round((expirationTime / 6) * 5);
     const accessToken = new AccessToken(token, expireTime);
-    await this.saveAccessToken(accessToken);
+    await this.setAccessToken(accessToken);
     return accessToken;
   }
 
-  private async request(path: string, body: any): Promise<object> {
+  private async request(config: AxiosRequestConfig & { retryTimes: number }): Promise<object> {
     const accessToken = await this.ensureAccessToken();
-    let res;
+    config.headers = {
+      'X-Access-Token': accessToken.token
+    };
+    let res: AxiosResponseExtend;
     try {
-      res = await request
-        .post(this.rootEndpoint + path)
-        .set('X-Access-Token', accessToken.token)
-        .send(body);
+      res = await this._httpRequest(config);
     } catch (e) {
-      throw new Error(`接口请求异常！状态码：${e.status}，异常描述：${e.response.body.msg}。`);
+      let errMessage: string;
+      if (e.response) {
+        if (
+          e.response.status === 401 && // 如果是因为 token 失效
+          (typeof config.retryTimes === 'undefined' || config.retryTimes > 0) // 并且没有超过最大重试次数
+        ) {
+          config.retryTimes = typeof config.retryTimes === 'undefined' ? this.maxRetryTimes - 1 : config.retryTimes - 1;
+          return this.getToken().then(() => this.request(config));
+        }
+        // 如果是响应异常
+        errMessage = `接口响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${e.config.traceId}！`;
+      } else {
+        // 如果是请求异常
+        errMessage = `接口请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
+      }
+      // 抛出新的异常
+      throw new Error(errMessage);
     }
 
-    const response = res.body;
-    if (response.status !== 200) {
-      throw new Error(`接口请求异常！异常描述：状态码 ${response.status}, 异常原因 "${response.msg}"。`);
+    const resData = res.data;
+    if (resData.status !== 200) {
+      throw new Error(
+        `接口请求结果失败！异常描述：结果码 ${resData.status}，异常原因 ${resData.msg}，traceId：${res.config.traceId}！`
+      );
     }
 
-    return response.data;
+    return resData.data;
   }
 
   /**

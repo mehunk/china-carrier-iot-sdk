@@ -1,6 +1,7 @@
 export interface ClientOptions {
   username: string;
   password: string;
+  rootEndpoint?: string;
 }
 
 export interface Options {
