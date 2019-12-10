@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as soap from 'soap';
 
 import * as apis from './mixins';
-import { createHttpLogObjFromResponse, createHttpLogObjFromError } from './utils/log';
+import { createHttpLogObjFromResponse, createHttpLogObjFromError, RequestError } from './utils';
 import config from './config';
 import { Options, CustomOptions, MobileNoType, GetDetailResponse, OperationType, SetStatusResponse } from './types';
 
@@ -95,7 +95,7 @@ export class SoapClient {
       const errMessage = e.response
         ? `接口响应或结果异常！异常描述：${e.message}，traceId：${e.traceId}！`
         : `接口请求异常！异常描述：${e.message}，traceId：${e.traceId}！`;
-      throw new Error(errMessage);
+      throw new RequestError(errMessage, e.traceId);
     }
 
     return {

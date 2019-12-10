@@ -6,7 +6,7 @@ import * as moment from 'moment';
 import { QueryObj } from './types';
 import config from './config';
 import * as apis from './mixins';
-import { createHttpLogObjFromError, createHttpLogObjFromResponse } from './utils/log';
+import { createHttpLogObjFromError, createHttpLogObjFromResponse, RequestError } from './utils';
 import {
   Options,
   AccessTokenObj,
@@ -177,7 +177,7 @@ export class CmccIotClient {
         errMessage = `接口请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
       }
       // 抛出新的异常
-      throw new Error(errMessage);
+      throw new RequestError(errMessage, e.config.traceId);
     }
 
     const resData = res.data;
@@ -188,8 +188,9 @@ export class CmccIotClient {
         // 如果是 token 不存在或者失效，则重新再请求一次 token
         return this.getToken().then(() => this.request(path, methodQueryObj, retryTimes - 1));
       }
-      throw new Error(
-        `接口请求结果失败！异常描述：结果码 ${resData.status}，异常原因 ${resData.message}，traceId：${res.config.traceId}！`
+      throw new RequestError(
+        `接口请求结果失败！异常描述：结果码 ${resData.status}，异常原因 ${resData.message}，traceId：${res.config.traceId}！`,
+        res.config.traceId
       );
     }
 
@@ -238,13 +239,14 @@ export class CmccIotClient {
       } else {
         errMessage = `获取 Token 请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
       }
-      throw new Error(errMessage);
+      throw new RequestError(errMessage, e.config.traceId);
     }
 
     const resData = res.data;
     if (resData.status !== '0') {
-      throw new Error(
-        `获取 Token 失败！结果码 ${resData.status}，异常原因 ${resData.message}，traceId：${res.config.traceId}！`
+      throw new RequestError(
+        `获取 Token 失败！结果码 ${resData.status}，异常原因 ${resData.message}，traceId：${res.config.traceId}！`,
+        res.config.traceId
       );
     }
 
@@ -252,7 +254,10 @@ export class CmccIotClient {
     try {
       token = resData.result[0].token;
     } catch (e) {
-      throw new Error(`获取 Token 失败！异常描述：接口返回格式不正确，traceId：${res.config.traceId}！`);
+      throw new RequestError(
+        `获取 Token 失败！异常描述：接口返回格式不正确，traceId：${res.config.traceId}！`,
+        res.config.traceId
+      );
     }
 
     const expireTime = Date.now() + (60 - 10) * 60 * 1000;

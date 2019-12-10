@@ -5,7 +5,7 @@ import { sleep } from 'sleep-ts';
 
 import config from './config';
 import * as apis from './mixins';
-import { createHttpLogObjFromError, createHttpLogObjFromResponse } from './utils/log';
+import { createHttpLogObjFromError, createHttpLogObjFromResponse, RequestError } from './utils';
 import {
   Options,
   CustomOptions,
@@ -128,7 +128,7 @@ export class CuccIotClient {
       } else {
         errMessage = `接口请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
       }
-      throw new Error(errMessage);
+      throw new RequestError(errMessage, e.config.traceId);
     }
   }
 

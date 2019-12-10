@@ -13,7 +13,7 @@ import {
   AxiosResponseExtend
 } from './types';
 import config from './config';
-import { createHttpLogObjFromError, createHttpLogObjFromResponse } from './utils/log';
+import { createHttpLogObjFromError, createHttpLogObjFromResponse, RequestError } from './utils';
 
 class AccessToken implements AccessTokenObj {
   constructor(
@@ -169,14 +169,15 @@ export class RestClient {
       } else {
         errMessage = `获取 Token 请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
       }
-      throw new Error(errMessage);
+      throw new RequestError(errMessage, e.config.traceId);
     }
 
     const resData = res.data;
 
     if (resData.status !== 200) {
-      throw new Error(
-        `获取 Token 失败！结果码 ${resData.status}，异常原因 ${resData.msg}，traceId：${res.config.traceId}！`
+      throw new RequestError(
+        `获取 Token 失败！结果码 ${resData.status}，异常原因 ${resData.msg}，traceId：${res.config.traceId}！`,
+        res.config.traceId
       );
     }
 
@@ -213,13 +214,14 @@ export class RestClient {
         errMessage = `接口请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
       }
       // 抛出新的异常
-      throw new Error(errMessage);
+      throw new RequestError(errMessage, e.config.traceId);
     }
 
     const resData = res.data;
     if (resData.status !== 200) {
-      throw new Error(
-        `接口请求结果失败！异常描述：结果码 ${resData.status}，异常原因 ${resData.msg}，traceId：${res.config.traceId}！`
+      throw new RequestError(
+        `接口请求结果失败！异常描述：结果码 ${resData.status}，异常原因 ${resData.msg}，traceId：${res.config.traceId}！`,
+        res.config.traceId
       );
     }
 
