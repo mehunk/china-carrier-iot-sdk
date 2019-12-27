@@ -14,7 +14,10 @@ import {
   GetUsageResponse,
   MobileNoType,
   OperationType,
+  DeviceBindStatusCheckType,
   SetStatusResponse,
+  GetDeviceBindStatusResponse,
+  GetDetailResponse,
   Status,
   AxiosRequestConfigExtend,
   AxiosResponseExtend
@@ -81,6 +84,8 @@ export class CmccIotClient {
   public getStatus: (type: MobileNoType, id: string) => Promise<GetStatusResponse>;
   public setStatus: (type: MobileNoType, id: string, operationType: OperationType) => Promise<SetStatusResponse>;
   public getUsage: (type: MobileNoType, id: string) => Promise<GetUsageResponse>;
+  public getDeviceBindStatus: (msisdn: string, checkType: DeviceBindStatusCheckType) => Promise<GetDeviceBindStatusResponse>;
+  public getDetail: (type: MobileNoType, id: string) => Promise<GetDetailResponse>;
 
   /**
    * 构造函数
@@ -269,4 +274,4 @@ export class CmccIotClient {
 
 CmccIotClient.mixin(apis);
 
-export { Options, MobileNoType, OperationType, Status };
+export { Options, MobileNoType, OperationType, DeviceBindStatusCheckType, Status };

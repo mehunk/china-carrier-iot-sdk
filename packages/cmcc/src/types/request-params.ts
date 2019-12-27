@@ -14,6 +14,11 @@ export enum OperationType {
   ActivationReady2Activated
 }
 
+export enum DeviceBindStatusCheckType {
+  Ticket,
+  Network
+}
+
 export interface QueryObj {
   [key: string]: string | number;
 }

@@ -19,6 +19,21 @@ export interface GetUsageResponse {
   dataAmount: string;
 }
 
+export interface GetDeviceBindStatusResponse {
+  result: string; // 0：已分离，1：未分离，2：查询失败
+  errorCode: string;
+  errorDes: string;
+  sepTime: string;
+}
+
 export type SetStatusResponse = {
   [key in keyof typeof MobileNoType]: string;
+};
+
+export type GetDetailResponse = {
+  msisdn: string;
+  imsi: string;
+  iccid: string;
+  activateDate: string; // 激活时间
+  openDate: string; // 开卡时间
 };
