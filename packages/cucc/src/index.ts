@@ -6,7 +6,8 @@ import {
   GetUsageResponse,
   SetDetailResponse,
   SetDetailParams,
-  CustomOptions as JasperCustomOptions
+  CustomOptions as JasperCustomOptions,
+  Status
 } from './jasper-client';
 import { CmpClient, GetRealNameStatusResponse, CustomOptions as CmpCustomOptions } from './cmp-client';
 import { JasperClientOptions, CmpClientOptions, Options } from './types';
@@ -46,4 +47,4 @@ export class CuccIotClient {
   }
 }
 
-export { Options };
+export { Options, Status };

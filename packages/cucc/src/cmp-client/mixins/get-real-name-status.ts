@@ -11,7 +11,7 @@ export function getRealNameStatus(iccid: string): Promise<GetRealNameStatusRespo
     method: 'POST',
     url: path,
     data: {
-      iccid
+      iccid: iccid.substring(0, 19)
     }
   });
 }
