@@ -18,6 +18,11 @@ import {
   SetStatusResponse,
   GetDeviceBindStatusResponse,
   GetDetailResponse,
+  GetStatusChangeHistoryResponse,
+  GetCurrentPositionCityCodeResponse,
+  GetCurrentPositionWgs84Response,
+  GetLastPositionWgs84Response,
+  GetLastPositionCityCodeResponse,
   Status,
   AxiosRequestConfigExtend,
   AxiosResponseExtend
@@ -86,6 +91,11 @@ export class CmccIotClient {
   public getUsage: (type: MobileNoType, id: string) => Promise<GetUsageResponse>;
   public getDeviceBindStatus: (msisdn: string, checkType: DeviceBindStatusCheckType) => Promise<GetDeviceBindStatusResponse>;
   public getDetail: (type: MobileNoType, id: string) => Promise<GetDetailResponse>;
+  public getStatusChangeHistory: (type: MobileNoType, id: string) => Promise<GetStatusChangeHistoryResponse>;
+  public getCurrentPositionCityCode: (type: MobileNoType, id: string) => Promise<GetCurrentPositionCityCodeResponse>;
+  public getCurrentPositionWgs84: (type: MobileNoType, id: string) => Promise<GetCurrentPositionWgs84Response>;
+  public getLastPositionCityCode: (type: MobileNoType, id: string) => Promise<GetLastPositionCityCodeResponse>;
+  public getLastPositionWgs84: (type: MobileNoType, id: string) => Promise<GetLastPositionWgs84Response>;
 
   /**
    * 构造函数

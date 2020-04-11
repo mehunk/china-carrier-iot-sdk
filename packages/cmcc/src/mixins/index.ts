@@ -3,3 +3,8 @@ export * from './api-set-status';
 export * from './api-get-usage';
 export * from './api-get-device-bind-status';
 export * from './api-get-detail';
+export * from './api-get-status-change-history';
+export * from './api-get-current-position-city-code';
+export * from './api-get-current-position-wgs84';
+export * from './api-get-last-position-city-code';
+export * from './api-get-last-position-wgs84';

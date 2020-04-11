@@ -30,10 +30,39 @@ export type SetStatusResponse = {
   [key in keyof typeof MobileNoType]: string;
 };
 
-export type GetDetailResponse = {
+export interface GetDetailResponse {
   msisdn: string;
   imsi: string;
   iccid: string;
   activateDate: string; // 激活时间
   openDate: string; // 开卡时间
-};
+}
+
+export interface GetStatusChangeHistoryResponse {
+  changeHistoryList: {
+    descStatus: Status;
+    targetStatus: Status;
+    changeDate: string;
+  }[];
+}
+
+export interface GetCurrentPositionCityCodeResponse {
+  cityCode: string;
+}
+
+export interface GetCurrentPositionWgs84Response {
+  lat: string;
+  lon: string;
+}
+
+export interface GetLastPositionCityCodeResponse {
+  onLineTime: string;
+  mobileCountryCode: string;
+  cityCode: string;
+}
+
+export interface GetLastPositionWgs84Response {
+  lastTime: string;
+  lastLat: string;
+  lastLon: string;
+}
