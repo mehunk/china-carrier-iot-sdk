@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 import { AxiosInstance, default as axios } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import * as moment from 'moment';
+import { Redis } from 'ioredis';
 
 import { QueryObj } from './types';
 import config from './config';
@@ -27,6 +28,7 @@ import {
   AxiosRequestConfigExtend,
   AxiosResponseExtend
 } from './types';
+import {sleep} from "sleep-ts";
 
 class AccessToken implements AccessTokenObj {
   constructor(
@@ -79,12 +81,14 @@ export class CmccIotClient {
   [key: string]: any;
 
   private readonly httpClient: AxiosInstance;
+  private readonly redis: Redis;
   private readonly appId: string;
   private readonly password: string;
   private readonly rootEndpoint: string;
   private store: AccessToken;
   private maxRetryTimes = 3;
   private maxTimeoutMs = 60 * 1000;
+  private readonly lockKey: string;
 
   public getStatus: (type: MobileNoType, id: string) => Promise<GetStatusResponse>;
   public setStatus: (type: MobileNoType, id: string, operationType: OperationType) => Promise<SetStatusResponse>;
@@ -104,8 +108,10 @@ export class CmccIotClient {
    * @param customOptions - 允许自定义的保存 toke，获取 token 和记录日志的方法对象
    */
   constructor(options: Options, customOptions: CustomOptions = {}) {
+    this.redis = options.redis;
     this.appId = options.appId;
     this.password = options.password;
+    this.lockKey = options.lockKey;
     this.rootEndpoint = options.rootEndpoint || config.rootEndpoint;
 
     const customOptionsKeys = ['maxRetryTimes', 'maxTimeoutMs', 'getAccessToken', 'setAccessToken', 'log'];
@@ -218,11 +224,31 @@ export class CmccIotClient {
    * @returns accessToken
    */
   private async ensureAccessToken(): Promise<AccessToken> {
-    const accessToken = await this.getAccessToken();
-    if (accessToken && accessToken.isValid()) {
-      return accessToken;
-    }
-    return this.getToken();
+    let leftRetryTimes = 5;
+    let accessToken: AccessToken;
+
+    do {
+      accessToken = await this.getAccessToken();
+      if (accessToken && accessToken.isValid()) {
+        return accessToken;
+      }
+
+      const isLockGotten = await this.getLock();
+      if (isLockGotten) {
+        try {
+          accessToken = await this.getToken();
+          await this.unlock();
+          return accessToken;
+        } catch (e) {
+          await this.unlock();
+          throw e;
+        }
+      }
+
+      await sleep(500);
+    } while (leftRetryTimes-- > 0)
+
+    throw Error('获取 token 失败！等待时间超时！');
   }
 
   /**
@@ -279,6 +305,16 @@ export class CmccIotClient {
     const accessToken = new AccessToken(token, expireTime);
     await this.setAccessToken(accessToken);
     return accessToken;
+  }
+
+  private async getLock() {
+    const ttl = 3; // 生存时间暂时设置为 3 秒
+    const res = await this.redis.set(this.lockKey, 1, 'ex', ttl, 'nx');
+    return res === 'OK';
+  }
+
+  private async unlock() {
+    return this.redis.del(this.lockKey);
   }
 }
 

@@ -1,6 +1,10 @@
+import * as redis from 'ioredis';
+
 export interface Options {
   appId: string;
   password: string;
+  redis: redis.Redis;
+  lockKey: string;
   rootEndpoint?: string;
 }
 
