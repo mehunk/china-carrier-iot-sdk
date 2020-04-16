@@ -20,7 +20,7 @@ import { ClientOptions, Options } from './types';
 
 export interface CustomOptions extends RestCustomOptions, SoapCustomOptions {}
 
-export class CtccIotClient {
+export class CtccDspIotClient {
   private readonly soapOptions: ClientOptions;
   private readonly restOptions: ClientOptions;
   private readonly customOptions: CustomOptions;

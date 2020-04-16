@@ -1,0 +1,35 @@
+{
+  "name": "@china-carrier-iot-sdk/ctcc-cmp",
+  "version": "1.0.0",
+  "main": "lib/index.js",
+  "license": "MIT",
+  "author": "Wei Qiang<mehunk@163.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mehunk/china-carrier-iot-sdk.git"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "typings": "lib/index.d.ts",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "rimraf lib",
+    "prepare": "npm run clean && tsc"
+  },
+  "dependencies": {
+    "axios": "^0.19.0",
+    "ctcc-cmp-des": "^1.0.0",
+    "lodash": "^4.17.15",
+    "tslib": "^1.10.0",
+    "uuid": "^3.3.3",
+    "xml2js": "^0.4.23"
+  },
+  "devDependencies": {
+    "@types/xml2js": "^0.4.5",
+    "rimraf": "^3.0.0"
+  }
+}
