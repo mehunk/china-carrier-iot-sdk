@@ -14,3 +14,8 @@ export interface Options {
   jasper: JasperClientOptions;
   cmp: CmpClientOptions;
 }
+
+export interface MobileNoObj {
+  iccid?: string;
+  msisdn?: string;
+}

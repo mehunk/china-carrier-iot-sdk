@@ -17,7 +17,7 @@ import {
   ImeiChangeEventData
 } from './jasper-client';
 import { CmpClient, CustomOptions as CmpCustomOptions, GetRealNameStatusResponse } from './cmp-client';
-import { CmpClientOptions, JasperClientOptions, Options } from './types';
+import { CmpClientOptions, JasperClientOptions, Options, MobileNoObj } from './types';
 
 export interface CustomOptions extends JasperCustomOptions, CmpCustomOptions {}
 
@@ -56,18 +56,31 @@ export class CuccIotClient extends EventEmitter {
     return this.cmpClient.getRealNameStatus(iccid);
   }
 
+  static async parseEventData (eventDataStr: string): Promise<EventData> {
+    try {
+      return await parseStringPromise(eventDataStr, {
+        explicitArray: false,
+        explicitRoot: false,
+        ignoreAttrs: true
+      })
+    } catch (e) {
+      throw new Error(`无效的回调事件参数！原始参数：${eventDataStr}`);
+    }
+  }
+
+  static async getMobileNoTypeFromEvent(eventParams: EventParams): Promise<MobileNoObj> {
+    const eventData = await this.parseEventData(eventParams.data);
+
+    return {
+      iccid: eventData.iccid
+    };
+  }
+
   async handleEvent(eventParams: EventParams): Promise<void> {
     // 后期需要校验签名
 
     // xml 转换
-    let eventData: EventData = null;
-    try {
-      eventData = await parseStringPromise(eventParams.data, {
-        explicitArray: false,
-        explicitRoot: false,
-        ignoreAttrs: true
-      });
-    } catch {}
+    const eventData = await CuccIotClient.parseEventData(eventParams.data);
 
     switch (eventParams.eventType) {
       case EventType.ImeiChange:
