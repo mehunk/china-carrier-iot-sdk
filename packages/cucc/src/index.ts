@@ -1,27 +1,37 @@
+import * as EventEmitter from 'events';
+
 import * as _ from 'lodash';
+import { parseStringPromise } from 'xml2js';
 
 import {
-  JasperClient,
+  CustomOptions as JasperCustomOptions,
+  EventParams,
+  EventType,
   GetDetailResponse,
   GetUsageResponse,
-  SetDetailResponse,
+  JasperClient,
   SetDetailParams,
-  CustomOptions as JasperCustomOptions,
-  Status
+  SetDetailResponse,
+  Status,
+  EventData,
+  ImeiChangeEventData
 } from './jasper-client';
-import { CmpClient, GetRealNameStatusResponse, CustomOptions as CmpCustomOptions } from './cmp-client';
-import { JasperClientOptions, CmpClientOptions, Options } from './types';
+import { CmpClient, CustomOptions as CmpCustomOptions, GetRealNameStatusResponse } from './cmp-client';
+import { CmpClientOptions, JasperClientOptions, Options } from './types';
 
 export interface CustomOptions extends JasperCustomOptions, CmpCustomOptions {}
 
-export class CuccIotClient {
+export class CuccIotClient extends EventEmitter {
   private readonly jasperOptions: JasperClientOptions;
   private readonly cmpOptions: CmpClientOptions;
   private readonly customOptions: CustomOptions;
   private readonly jasperClient: JasperClient;
   private readonly cmpClient: CmpClient;
 
+  on: (event: 'cucc-imeiChange', listener: (imeiChangeEventData: ImeiChangeEventData, eventParams: EventParams) => void) => this;
+
   constructor(options: Options, customOptions: CustomOptions = {}) {
+    super();
     this.jasperOptions = options.jasper;
     this.cmpOptions = options.cmp;
     this.customOptions = customOptions;
@@ -44,6 +54,28 @@ export class CuccIotClient {
 
   async getRealNameStatus(iccid: string): Promise<GetRealNameStatusResponse> {
     return this.cmpClient.getRealNameStatus(iccid);
+  }
+
+  async handleEvent(eventParams: EventParams): Promise<void> {
+    // 后期需要校验签名
+
+    // xml 转换
+    let eventData: EventData = null;
+    try {
+      eventData = await parseStringPromise(eventParams.data, {
+        explicitArray: false,
+        explicitRoot: false,
+        ignoreAttrs: true
+      });
+    } catch {}
+
+    switch (eventParams.eventType) {
+      case EventType.ImeiChange:
+        this.emit('cucc-imeiChange', eventData as ImeiChangeEventData, eventParams);
+        break;
+      default:
+        throw new Error(`没有对应${eventParams.eventType}事件的处理方法！`);
+    }
   }
 }
 

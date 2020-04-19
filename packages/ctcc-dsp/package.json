@@ -1,6 +1,6 @@
 {
   "name": "@china-carrier-iot-sdk/ctcc-dsp",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "lib/index.js",
   "license": "MIT",
   "author": "Wei Qiang<mehunk@163.com>",
@@ -29,7 +29,7 @@
     "uuid": "^3.3.3"
   },
   "devDependencies": {
-    "@types/bluebird": "^3.5.29",
-    "rimraf": "^3.0.0"
+    "rimraf": "^3.0.0",
+    "@types/node": "^12.12.36"
   }
 }

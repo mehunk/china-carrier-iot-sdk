@@ -18,6 +18,7 @@ import { createHttpLogObjFromError, createHttpLogObjFromResponse, RequestError }
 function log() {
   return function(target: object, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
     const method = descriptor.value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     descriptor.value = async function(...args: any[]): Promise<AxiosResponseExtend> {
       let res: AxiosResponseExtend;
       try {
@@ -28,13 +29,17 @@ function log() {
         if (e.response) {
           httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
         }
-        this.log(httpObj);
+        setImmediate(async () => {
+          await this.log(httpObj);
+        });
         throw e;
       }
 
       // 打印网络请求日志
       const httpObj = createHttpLogObjFromResponse(res);
-      this.log(httpObj);
+      setImmediate(async () => {
+        await this.log(httpObj);
+      });
 
       return res;
     };
@@ -44,6 +49,7 @@ function log() {
 }
 
 export class CmpClient {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 
   private readonly appId: string;
@@ -99,6 +105,7 @@ export class CmpClient {
    *
    * @param paramsObj
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getToken(paramsObj: { [key: string]: any }): string {
     let str = '';
     Object.keys(paramsObj)
@@ -110,9 +117,11 @@ export class CmpClient {
     return sm3(str);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async request(config: AxiosRequestConfig & { retryTimes?: number }): Promise<any> {
     let res: AxiosResponseExtend;
     const timestamp = moment().format('YYYYMMDDHHmmssSSS');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const paramsObj: { [key: string]: any } = {
       app_id: this.appId, // eslint-disable-line @typescript-eslint/camelcase
       timestamp,

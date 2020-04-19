@@ -1,3 +1,5 @@
+import * as EventEmitter from 'events';
+
 import * as _ from 'lodash';
 import { AxiosInstance, default as axios } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,7 +30,7 @@ import {
   AxiosRequestConfigExtend,
   AxiosResponseExtend
 } from './types';
-import {sleep} from "sleep-ts";
+import { sleep } from 'sleep-ts';
 
 class AccessToken implements AccessTokenObj {
   constructor(
@@ -52,6 +54,7 @@ export interface CustomOptions {
 function log() {
   return function(target: object, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
     const method = descriptor.value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     descriptor.value = async function(...args: any[]): Promise<AxiosResponseExtend> {
       let res: AxiosResponseExtend;
       try {
@@ -62,13 +65,17 @@ function log() {
         if (e.response) {
           httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
         }
-        this.log(httpObj);
+        setImmediate(async () => {
+          await this.log(httpObj);
+        });
         throw e;
       }
 
       // 打印网络请求日志
       const httpObj = createHttpLogObjFromResponse(res);
-      this.log(httpObj);
+      setImmediate(async () => {
+        await this.log(httpObj);
+      });
 
       return res;
     };
@@ -77,7 +84,8 @@ function log() {
   };
 }
 
-export class CmccIotClient {
+export class CmccIotClient extends EventEmitter {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 
   private readonly httpClient: AxiosInstance;
@@ -108,6 +116,7 @@ export class CmccIotClient {
    * @param customOptions - 允许自定义的保存 toke，获取 token 和记录日志的方法对象
    */
   constructor(options: Options, customOptions: CustomOptions = {}) {
+    super();
     this.redis = options.redis;
     this.appId = options.appId;
     this.password = options.password;
@@ -307,13 +316,13 @@ export class CmccIotClient {
     return accessToken;
   }
 
-  private async getLock() {
+  private async getLock(): Promise<boolean> {
     const ttl = 3; // 生存时间暂时设置为 3 秒
     const res = await this.redis.set(this.lockKey, 1, 'ex', ttl, 'nx');
     return res === 'OK';
   }
 
-  private async unlock() {
+  private async unlock(): Promise<number> {
     return this.redis.del(this.lockKey);
   }
 }

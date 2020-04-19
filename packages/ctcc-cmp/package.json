@@ -1,6 +1,6 @@
 {
   "name": "@china-carrier-iot-sdk/ctcc-cmp",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "lib/index.js",
   "license": "MIT",
   "author": "Wei Qiang<mehunk@163.com>",
@@ -29,7 +29,6 @@
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
-    "@types/xml2js": "^0.4.5",
     "rimraf": "^3.0.0"
   }
 }

@@ -1,3 +1,5 @@
+import * as EventEmitter from 'events';
+
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import axios, { AxiosRequestConfig, AxiosInstance } from 'axios';
@@ -34,13 +36,17 @@ function log() {
         if (e.response) {
           httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
         }
-        this.log(httpObj);
+        setImmediate(async () => {
+          await this.log(httpObj);
+        });
         throw e;
       }
 
       // 打印网络请求日志
       const httpObj = createHttpLogObjFromResponse(res);
-      this.log(httpObj);
+      setImmediate(async () => {
+        await this.log(httpObj);
+      });
 
       return res;
     };
@@ -49,7 +55,7 @@ function log() {
   };
 }
 
-export class CtccCmpIotClient {
+export class CtccCmpIotClient extends EventEmitter {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 
@@ -67,6 +73,7 @@ export class CtccCmpIotClient {
   public activateActivationReady: (msisdn: string) => Promise<ActivateActivationReadyResponse>;
 
   constructor(options: Options, customOptions: CustomOptions) {
+    super();
     this.userId = options.userId;
     this.password = options.password;
     this.rootEndpoint = options.rootEndpoint || config.rootEndpoint;

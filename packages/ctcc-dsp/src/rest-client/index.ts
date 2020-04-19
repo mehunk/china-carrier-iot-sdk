@@ -37,6 +37,7 @@ export interface CustomOptions {
 function log() {
   return function(target: object, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
     const method = descriptor.value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     descriptor.value = async function(...args: any[]): Promise<AxiosResponseExtend> {
       let res: AxiosResponseExtend;
       try {
@@ -47,13 +48,17 @@ function log() {
         if (e.response) {
           httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
         }
-        this.log(httpObj);
+        setImmediate(async () => {
+          await this.log(httpObj);
+        });
         throw e;
       }
 
       // 打印网络请求日志
       const httpObj = createHttpLogObjFromResponse(res);
-      this.log(httpObj);
+      setImmediate(async () => {
+        await this.log(httpObj);
+      });
 
       return res;
     };
@@ -63,6 +68,7 @@ function log() {
 }
 
 export class RestClient {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 
   private readonly httpClient: AxiosInstance;

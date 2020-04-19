@@ -15,8 +15,10 @@ function logRequest() {
       path: string,
       methodName: string,
       args: object
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ): Promise<any[]> {
-      let res;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let res: any;
       const httpLogObj = {
         requestTime: new Date(),
         request: {
@@ -29,12 +31,18 @@ function logRequest() {
         res = await method.call(this, client, path, methodName, args);
       } catch (e) {
         // 打印网络请求错误日志
-        this.log(createHttpLogObjFromError(httpLogObj, e));
+        const logObj = createHttpLogObjFromError(httpLogObj, e)
+        setImmediate(async () => {
+          await this.log(logObj);
+        });
         throw e;
       }
 
       // 打印网络请求日志
-      this.log(createHttpLogObjFromResponse(httpLogObj, res));
+      const logObj = createHttpLogObjFromResponse(httpLogObj, res);
+      setImmediate(async () => {
+        await this.log(logObj);
+      });
       return res;
     };
 
@@ -43,6 +51,7 @@ function logRequest() {
 }
 
 export class SoapClient {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 
   private readonly username: string;
@@ -70,8 +79,10 @@ export class SoapClient {
   }
 
   @logRequest()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async _httpRequest(client: soap.Client, path: string, methodName: string, args: object): Promise<any[]> {
     const traceId = uuidv4();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let res: any[];
     try {
       res = await client[methodName + 'Async'](args, {
@@ -88,6 +99,7 @@ export class SoapClient {
 
   private async request(path: string, methodName: string, args: object): Promise<object> {
     const client = await this.getClient(path);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let res: any[];
     try {
       res = await this._httpRequest(client, path, methodName, args);

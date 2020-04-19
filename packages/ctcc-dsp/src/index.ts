@@ -1,3 +1,5 @@
+import * as EventEmitter from 'events';
+
 import * as _ from 'lodash';
 
 import {
@@ -20,7 +22,7 @@ import { ClientOptions, Options } from './types';
 
 export interface CustomOptions extends RestCustomOptions, SoapCustomOptions {}
 
-export class CtccDspIotClient {
+export class CtccDspIotClient extends EventEmitter {
   private readonly soapOptions: ClientOptions;
   private readonly restOptions: ClientOptions;
   private readonly customOptions: CustomOptions;
@@ -28,6 +30,7 @@ export class CtccDspIotClient {
   private readonly soapClient: SoapClient;
 
   constructor(options: Options, customOptions: CustomOptions = {}) {
+    super();
     this.soapOptions = options.soap;
     this.restOptions = options.rest;
     this.customOptions = customOptions;

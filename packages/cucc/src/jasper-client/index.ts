@@ -15,12 +15,17 @@ import {
   SetDetailParams,
   Status,
   AxiosRequestConfigExtend,
-  AxiosResponseExtend
+  AxiosResponseExtend,
+  EventType,
+  EventParams,
+  EventData,
+  ImeiChangeEventData
 } from './types';
 
 function log() {
   return function(target: object, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
     const method = descriptor.value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     descriptor.value = async function(...args: any[]): Promise<AxiosResponseExtend> {
       let res: AxiosResponseExtend;
       try {
@@ -31,13 +36,17 @@ function log() {
         if (e.response) {
           httpObj.response = _.pick(e.response, ['status', 'headers', 'data']);
         }
-        this.log(httpObj);
+        setImmediate(async () => {
+          await this.log(httpObj);
+        });
         throw e;
       }
 
       // 打印网络请求日志
       const httpObj = createHttpLogObjFromResponse(res);
-      this.log(httpObj);
+      setImmediate(async () => {
+        await this.log(httpObj);
+      });
 
       return res;
     };
@@ -47,12 +56,13 @@ function log() {
 }
 
 export class JasperClient {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 
   private readonly authStr: string;
-  private username: string;
-  private key: string;
-  private rootEndpoint: string;
+  private readonly username: string;
+  private readonly key: string;
+  private readonly rootEndpoint: string;
   private maxRetryTimes = 3;
   private maxTimeoutMs = 60 * 1000;
   private httpClient: AxiosInstance;
@@ -103,6 +113,7 @@ export class JasperClient {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async request(config: AxiosRequestConfig & { retryTimes?: number }): Promise<any> {
     let res: AxiosResponseExtend;
     try {
@@ -148,4 +159,16 @@ export class JasperClient {
 
 JasperClient.mixin(apis);
 
-export { Options, Status, CustomOptions, GetDetailResponse, GetUsageResponse, SetDetailResponse, SetDetailParams };
+export {
+  Options,
+  Status,
+  CustomOptions,
+  GetDetailResponse,
+  GetUsageResponse,
+  SetDetailResponse,
+  SetDetailParams,
+  EventType,
+  EventParams,
+  EventData,
+  ImeiChangeEventData
+};
