@@ -5,14 +5,14 @@ import { parseStringPromise } from 'xml2js';
 
 import {
   CustomOptions as JasperCustomOptions,
-  EventParams,
-  EventType,
   GetDetailResponse,
   GetUsageResponse,
   JasperClient,
   SetDetailParams,
   SetDetailResponse,
   Status,
+  EventParams,
+  EventType,
   EventData,
   ImeiChangeEventData
 } from './jasper-client';
@@ -79,4 +79,4 @@ export class CuccIotClient extends EventEmitter {
   }
 }
 
-export { Options, Status };
+export { Options, Status, EventParams, ImeiChangeEventData };
