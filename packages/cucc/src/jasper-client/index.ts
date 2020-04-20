@@ -5,7 +5,7 @@ import { sleep } from 'sleep-ts';
 
 import config from './config';
 import * as apis from './mixins';
-import { createHttpLogObjFromError, createHttpLogObjFromResponse, RequestError } from './utils';
+import { createHttpLogObjFromError, createHttpLogObjFromResponse, RequestError, eventType2Name } from './utils';
 import {
   Options,
   CustomOptions,
@@ -19,7 +19,8 @@ import {
   EventType,
   EventParams,
   EventData,
-  ImeiChangeEventData
+  ImeiChangeEventData,
+  EventResponse
 } from './types';
 
 function log() {
@@ -170,5 +171,7 @@ export {
   EventType,
   EventParams,
   EventData,
-  ImeiChangeEventData
+  ImeiChangeEventData,
+  EventResponse,
+  eventType2Name
 };

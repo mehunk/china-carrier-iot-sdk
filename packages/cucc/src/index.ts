@@ -1,4 +1,5 @@
 import * as EventEmitter from 'events';
+import * as assert from 'assert';
 
 import * as _ from 'lodash';
 import { parseStringPromise } from 'xml2js';
@@ -14,7 +15,9 @@ import {
   EventParams,
   EventType,
   EventData,
-  ImeiChangeEventData
+  ImeiChangeEventData,
+  EventResponse,
+  eventType2Name
 } from './jasper-client';
 import { CmpClient, CustomOptions as CmpCustomOptions, GetRealNameStatusResponse } from './cmp-client';
 import { CmpClientOptions, JasperClientOptions, Options, MobileNoObj } from './types';
@@ -28,7 +31,7 @@ export class CuccIotClient extends EventEmitter {
   private readonly jasperClient: JasperClient;
   private readonly cmpClient: CmpClient;
 
-  on: (event: 'cucc-imeiChange', listener: (imeiChangeEventData: ImeiChangeEventData, eventParams: EventParams) => void) => this;
+  // on: (event: 'cucc-imeiChange', listener: (imeiChangeEventData: ImeiChangeEventData, eventParams: EventParams) => void) => this;
 
   constructor(options: Options, customOptions: CustomOptions = {}) {
     super();
@@ -76,20 +79,28 @@ export class CuccIotClient extends EventEmitter {
     };
   }
 
-  async handleEvent(eventParams: EventParams): Promise<void> {
+  async handleEvent(eventParams: EventParams): Promise<EventResponse> {
     // 后期需要校验签名
 
     // xml 转换
     const eventData = await CuccIotClient.parseEventData(eventParams.data);
+    const eventName = eventType2Name[eventParams.eventType];
+    assert(eventName, `没有配置事件类型为${eventParams.eventType}的事件名称映射！`);
 
     switch (eventParams.eventType) {
       case EventType.ImeiChange:
-        this.emit('cucc-imeiChange', eventData as ImeiChangeEventData, eventParams);
+        this.emit(eventName, eventData as ImeiChangeEventData, eventParams);
         break;
       default:
         throw new Error(`没有对应${eventParams.eventType}事件的处理方法！`);
     }
+
+    return {
+      eventName,
+      eventData: eventData as ImeiChangeEventData,
+      eventParams
+    }
   }
 }
 
-export { Options, Status, EventParams, ImeiChangeEventData };
+export { Options, Status, EventParams, EventData, ImeiChangeEventData, EventResponse };
