@@ -9,6 +9,7 @@ import {
   MobileNoType,
   GetUsageType,
   GetUsageResponse,
+  GetRealNameStatusResponse,
   AxiosRequestConfigExtend,
   AxiosResponseExtend
 } from './types';
@@ -87,6 +88,7 @@ export class RestClient {
     toDate: string,
     type: GetUsageType[]
   ) => Promise<GetUsageResponse>;
+  public getRealNameStatus: (mobileNoType: MobileNoType, id: string) => Promise<GetRealNameStatusResponse>;
 
   constructor(options: Options, customOptions: CustomOptions = {}) {
     this.username = options.username;
@@ -143,10 +145,7 @@ export class RestClient {
 
   @log()
   private _httpRequest(config: AxiosRequestConfig): Promise<AxiosResponseExtend> {
-    return this.httpClient.request({
-      method: 'POST',
-      ...config
-    });
+    return this.httpClient.request(config);
   }
 
   /**
@@ -155,7 +154,8 @@ export class RestClient {
    * @returns accessToken
    */
   private async getToken(): Promise<AccessToken> {
-    const config = {
+    const config: AxiosRequestConfig = {
+      method: 'POST',
       url: '/login',
       data: {
         username: this.username,

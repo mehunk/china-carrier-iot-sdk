@@ -16,6 +16,7 @@ import {
   MobileNoType as RestClientMobileNoType,
   GetUsageType,
   GetUsageResponse,
+  GetRealNameStatusResponse,
   CustomOptions as RestCustomOptions
 } from './rest-client';
 import { ClientOptions, Options } from './types';
@@ -39,7 +40,7 @@ export class CtccDspIotClient extends EventEmitter {
     this.restClient = new RestClient(this.restOptions, this.customOptions);
   }
 
-  async getDetail(type: SoapClientMobileNoType, id: string): Promise<GetDetailResponse> {
+  getDetail(type: SoapClientMobileNoType, id: string): Promise<GetDetailResponse> {
     return this.soapClient.getDetail(type, id);
   }
 
@@ -53,7 +54,7 @@ export class CtccDspIotClient extends EventEmitter {
    * @param toDate - 截止日期
    * @param type - 查询类型
    */
-  async getUsage(
+  getUsage(
     mobileNoType: RestClientMobileNoType,
     id: string,
     month: string,
@@ -71,8 +72,12 @@ export class CtccDspIotClient extends EventEmitter {
    * @param id - 号码
    * @param operationType - 操作类型
    */
-  async setStatus(type: SoapClientMobileNoType, id: string, operationType: OperationType): Promise<SetStatusResponse> {
+  setStatus(type: SoapClientMobileNoType, id: string, operationType: OperationType): Promise<SetStatusResponse> {
     return this.soapClient.setStatus(type, id, operationType);
+  }
+
+  getRealNameStatus(mobileNoType: RestClientMobileNoType, id: string): Promise<GetRealNameStatusResponse> {
+    return this.restClient.getRealNameStatus(mobileNoType, id);
   }
 }
 

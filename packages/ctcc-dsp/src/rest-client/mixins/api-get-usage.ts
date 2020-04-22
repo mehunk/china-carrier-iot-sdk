@@ -8,7 +8,8 @@ export function getUsage(
   toDate: string,
   type: GetUsageType[]
 ): Promise<GetUsageResponse> {
-  const config = {
+  return this.request({
+    method: 'POST',
     url: `/${mobileNoType}/${id}/trafficUsageHistory`,
     data: {
       type,
@@ -16,6 +17,5 @@ export function getUsage(
       from_date: fromDate /* eslint-disable-line @typescript-eslint/camelcase */,
       to_date: toDate /* eslint-disable-line @typescript-eslint/camelcase */
     }
-  };
-  return this.request(config);
+  });
 }

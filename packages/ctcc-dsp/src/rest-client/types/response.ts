@@ -16,3 +16,14 @@ export interface GetUsageResponse {
     };
   };
 }
+
+export interface GetRealNameStatusResponse {
+  commonRegionName: string;
+  iccid: string;
+  isAuth: boolean; // 是否实名认证,
+  commonRegionId: string;
+  imsi: string;
+  msisdn: string;
+  customerName: string;
+  customerNo: string;
+}
