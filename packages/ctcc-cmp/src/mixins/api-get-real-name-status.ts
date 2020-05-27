@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 
-import { GetStatusResponse, Status } from '../types';
+import { GetRealNameStatusResponse } from '../types';
 
 /**
  * 获取实名认证状态
@@ -8,11 +8,16 @@ import { GetStatusResponse, Status } from '../types';
  * @param msisdn - MSISDN
  */
 export async function getRealNameStatus(msisdn: string): Promise<boolean> {
-  const statusRes: GetStatusResponse = await this.getStatus(msisdn);
-  if (!statusRes.productInfo || !statusRes.productInfo.length) {
-    throw Error('获取实名状态失败！生命周期格式异常！');
-  }
+  const method = 'realNameQueryIot';
+  const res: GetRealNameStatusResponse = await this.request({
+    method: 'GET',
+    url: '/query.do',
+    params: {
+      method,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      access_number: msisdn
+    }
+  }, [msisdn, method]);
 
-  const status = _.head(statusRes.productInfo);
-  return status.productMainStatusCd !== Status.NotRealNameDeactivated;
+  return res.resultCode === '0';
 }

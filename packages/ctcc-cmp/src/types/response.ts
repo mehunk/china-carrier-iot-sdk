@@ -1,4 +1,3 @@
-// TODO 缺少 运营商管理状态: 6 的枚举
 export enum Status {
   TestReady = '2',
   Inventory = '3',
@@ -43,4 +42,17 @@ export interface ActivateActivationReadyResponse {
   RESULT: string; // '0',
   SMSG: string; // '处理成功！',
   GROUP_TRANSACTIONID: string; // '1000000190202004162027753742'
+}
+
+export interface GetRealNameStatusResponse {
+  RESULT: {
+    activeTime: string;
+    prodStatusName: string; // '未激活'
+    prodMainStatusName: string; // '运营商管理状态'
+    certNumber: string; // 'null'
+    number: string;
+  },
+  resultCode: string; // '-5',
+  resultMsg: string; // '未能查询到实名制信息',
+  GROUP_TRANSACTIONID: string;
 }
