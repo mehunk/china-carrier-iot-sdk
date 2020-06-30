@@ -1,7 +1,7 @@
 export interface Options {
   appId: string;
   appSecret: string;
-  openId?: string;
+  openId: string;
   rootEndpoint?: string;
 }
 
