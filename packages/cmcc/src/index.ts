@@ -18,6 +18,8 @@ import {
   MobileNoType,
   OperationType,
   DeviceBindStatusCheckType,
+  SetGroupMemberOperationType,
+  SetGroupMemberEffectType,
   SetStatusResponse,
   GetDeviceBindStatusResponse,
   GetDetailResponse,
@@ -108,6 +110,12 @@ export class CmccIotClient extends EventEmitter {
   public getCurrentPositionWgs84: (type: MobileNoType, id: string) => Promise<GetCurrentPositionWgs84Response>;
   public getLastPositionCityCode: (type: MobileNoType, id: string) => Promise<GetLastPositionCityCodeResponse>;
   public getLastPositionWgs84: (type: MobileNoType, id: string) => Promise<GetLastPositionWgs84Response>;
+  public setGroupMember: (
+    msisdn: string,
+    groupId: string,
+    operationType: SetGroupMemberOperationType,
+    effectType?: SetGroupMemberEffectType
+  ) => Promise<void>;
 
   /**
    * 构造函数
@@ -329,4 +337,12 @@ export class CmccIotClient extends EventEmitter {
 
 CmccIotClient.mixin(apis);
 
-export { Options, MobileNoType, OperationType, DeviceBindStatusCheckType, Status };
+export {
+  Options,
+  MobileNoType,
+  OperationType,
+  SetGroupMemberOperationType,
+  SetGroupMemberEffectType,
+  DeviceBindStatusCheckType,
+  Status
+};

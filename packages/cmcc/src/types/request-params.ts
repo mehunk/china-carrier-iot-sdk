@@ -22,3 +22,13 @@ export enum DeviceBindStatusCheckType {
 export interface QueryObj {
   [key: string]: string | number;
 }
+
+export enum SetGroupMemberOperationType {
+  Add = '0',
+  Remove = '1'
+}
+
+export enum SetGroupMemberEffectType {
+  Tomorrow = '0',
+  NextMonth = '1'
+}

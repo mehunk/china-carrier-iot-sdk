@@ -8,3 +8,4 @@ export * from './api-get-current-position-city-code';
 export * from './api-get-current-position-wgs84';
 export * from './api-get-last-position-city-code';
 export * from './api-get-last-position-wgs84';
+export * from './api-set-group-member';
