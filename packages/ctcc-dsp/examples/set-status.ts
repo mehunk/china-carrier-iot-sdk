@@ -1,9 +1,9 @@
 import { options, iccid, customOptions, redis } from './sample';
-import { CtccDspIotClient, SoapClientMobileNoType, OperationType } from '../src';
+import { CtccDspIotClient, GlobalSoapClientMobileNoType, OperationType } from '../src';
 
 const ctccDspIotClient = new CtccDspIotClient(options, customOptions);
 ctccDspIotClient
-  .setStatus(SoapClientMobileNoType.iccid, iccid, OperationType.Activate)
+  .setStatus(GlobalSoapClientMobileNoType.iccid, iccid, OperationType.Activate)
   .then(res =>
     console.dir(res, {
       depth: null

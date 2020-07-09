@@ -50,7 +50,7 @@ function logRequest() {
   };
 }
 
-export class SoapClient {
+export class GlobalSoapClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 
@@ -160,14 +160,14 @@ export class SoapClient {
    */
   public static mixin(obj: { [key: string]: Function }): void {
     Object.keys(obj).forEach(key => {
-      if (SoapClient.prototype.hasOwnProperty(key)) {
+      if (GlobalSoapClient.prototype.hasOwnProperty(key)) {
         throw new Error('不允许覆盖已经存在的成员方法 <' + key + '>');
       }
-      SoapClient.prototype[key] = obj[key];
+      GlobalSoapClient.prototype[key] = obj[key];
     });
   }
 }
 
-SoapClient.mixin(apis);
+GlobalSoapClient.mixin(apis);
 
 export * from './types';

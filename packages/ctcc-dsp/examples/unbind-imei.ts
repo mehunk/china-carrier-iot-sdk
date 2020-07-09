@@ -1,9 +1,14 @@
 import { options, iccid, customOptions, redis } from './sample';
-import { CtccDspIotClient, GlobalSoapClientMobileNoType } from '../src';
+import { CtccDspIotClient } from '../src';
 
 const ctccDspIotClient = new CtccDspIotClient(options, customOptions);
 ctccDspIotClient
-  .getDetail(GlobalSoapClientMobileNoType.iccid, iccid)
+  .unbindImei(
+    iccid,
+    '57000077',
+    '张强',
+    '13923847275'
+  )
   .then(res =>
     console.dir(res, {
       depth: null

@@ -7,9 +7,8 @@ import {
   Options,
   AccessTokenObj,
   MobileNoType,
-  GetUsageType,
-  GetUsageResponse,
-  GetRealNameStatusResponse,
+  DetailGroup,
+  GetDetailResponse,
   AxiosRequestConfigExtend,
   AxiosResponseExtend
 } from './types';
@@ -68,7 +67,7 @@ function log() {
   };
 }
 
-export class RestClient {
+export class GlobalRestClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 
@@ -80,26 +79,16 @@ export class RestClient {
   private maxRetryTimes = 3;
   private maxTimeoutMs = 60 * 1000;
 
-  public getUsage: (
-    mobileNoType: MobileNoType,
+  public getDetail: (
+    type: MobileNoType,
     id: string,
-    month: string,
-    fromDate: string,
-    toDate: string,
-    type: GetUsageType[]
-  ) => Promise<GetUsageResponse>;
-  public getRealNameStatus: (mobileNoType: MobileNoType, id: string) => Promise<GetRealNameStatusResponse>;
-  public unbindImei: (
-    iccid: string,
-    customerNo: string,
-    contactName: string,
-    contactPhone: string
-  ) => Promise<void>;
+    detailGroups: DetailGroup[]
+  ) => Promise<GetDetailResponse>;
 
   constructor(options: Options, customOptions: CustomOptions = {}) {
     this.username = options.username;
     this.password = options.password;
-    this.rootEndpoint = options.rootEndpoint || config.rootEndpoint;
+    this.rootEndpoint = (options.rootEndpoint || config.rootEndpoint) + '/rest';
     const customOptionsKeys = ['maxRetryTimes', 'maxTimeoutMs', 'getAccessToken', 'setAccessToken', 'log'];
 
     for (const [key, value] of Object.entries(_.pick(customOptions, customOptionsKeys))) {
@@ -162,9 +151,9 @@ export class RestClient {
   private async getToken(): Promise<AccessToken> {
     const config: AxiosRequestConfig = {
       method: 'POST',
-      url: '/login',
+      url: '/subscriptionManagement/v1/login',
       data: {
-        username: this.username,
+        email: this.username,
         password: this.password
       }
     };
@@ -176,7 +165,7 @@ export class RestClient {
       if (e.response) {
         errMessage = `获取 Token 响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${e.config.traceId}！`;
         if (typeof e.response.data === 'object') {
-          errMessage += `错误码：${e.response.data.status}，错误信息：${e.response.data.msg}！`;
+          errMessage += `错误码：${e.response.data.code}，错误信息：${e.response.data.message}！`;
         }
       } else {
         errMessage = `获取 Token 请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
@@ -186,15 +175,15 @@ export class RestClient {
 
     const resData = res.data;
 
-    if (resData.status !== 200) {
+    if (!resData.token) {
       throw new RequestError(
-        `获取 Token 失败！结果码 ${resData.status}，异常原因 ${resData.msg}，traceId：${res.config.traceId}！`,
+        `获取 Token 失败！结果码 ${resData.code}，异常原因 ${resData.message}，traceId：${res.config.traceId}！`,
         res.config.traceId
       );
     }
 
-    const { token, expirationTime } = resData.data;
-    // 失效时间较接口返回的失效时间提前 10 分钟
+    const { token, expirationTime } = resData;
+    // 失效时间较接口返回的失效时间提前
     const expireTime = Date.now() + Math.round((expirationTime / 6) * 5);
     const accessToken = new AccessToken(token, expireTime);
     await this.setAccessToken(accessToken);
@@ -221,6 +210,9 @@ export class RestClient {
         }
         // 如果是响应异常
         errMessage = `接口响应失败！异常描述：${e.message}，状态码：${e.response.status}，traceId：${e.config.traceId}！`;
+        if (typeof e.response.data === 'object') {
+          errMessage += `错误码：${e.response.data.code}，错误信息：${e.response.data.message}！`;
+        }
       } else {
         // 如果是请求异常
         errMessage = `接口请求失败！异常描述：${e.message}，traceId：${e.config.traceId}！`;
@@ -229,15 +221,7 @@ export class RestClient {
       throw new RequestError(errMessage, e.config.traceId);
     }
 
-    const resData = res.data;
-    if (resData.status !== 200) {
-      throw new RequestError(
-        `接口请求结果失败！异常描述：结果码 ${resData.status}，异常原因 ${resData.msg}，traceId：${res.config.traceId}！`,
-        res.config.traceId
-      );
-    }
-
-    return resData.data;
+    return res.data;
   }
 
   /**
@@ -246,14 +230,14 @@ export class RestClient {
    */
   public static mixin(obj: { [key: string]: Function }): void {
     Object.keys(obj).forEach(key => {
-      if (RestClient.prototype.hasOwnProperty(key)) {
+      if (GlobalRestClient.prototype.hasOwnProperty(key)) {
         throw new Error('不允许覆盖已经存在的成员方法 <' + key + '>');
       }
-      RestClient.prototype[key] = obj[key];
+      GlobalRestClient.prototype[key] = obj[key];
     });
   }
 }
 
-RestClient.mixin(apis);
+GlobalRestClient.mixin(apis);
 
 export * from './types';
