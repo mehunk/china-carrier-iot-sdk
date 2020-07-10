@@ -5,10 +5,10 @@ export enum MobileNoType {
 }
 
 export enum DetailGroup {
-  enterpriseInfo,
-  packageInfo,
-  dates,
-  label,
-  simSpecification,
-  lockStateInfo
+  enterpriseInfo = 'enterpriseInfo',
+  packageInfo = 'packageInfo',
+  dates = 'dates',
+  label = 'label',
+  simSpecification = 'simSpecification',
+  lockStateInfo = 'lockStateInfo'
 }
