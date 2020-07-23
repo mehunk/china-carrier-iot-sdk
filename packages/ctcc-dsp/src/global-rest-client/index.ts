@@ -29,8 +29,8 @@ class AccessToken implements AccessTokenObj {
 export interface CustomOptions {
   maxRetryTimes?: number; // 最大重试次数
   maxTimeoutMs?: number; // 最大超时时间，单位毫秒
-  getAccessToken?: () => Promise<AccessToken>;
-  setAccessToken?: (token: AccessToken) => Promise<void>;
+  getAccessToken?: (postfix: string) => Promise<AccessToken>;
+  setAccessToken?: (token: AccessToken, postfix: string) => Promise<void>;
   log?: (obj: object) => Promise<void>;
 }
 
@@ -78,6 +78,7 @@ export class GlobalRestClient {
   private store: AccessToken;
   private maxRetryTimes = 3;
   private maxTimeoutMs = 60 * 1000;
+  private readonly tokenPostfix = 'global';
 
   public getDetail: (
     type: MobileNoType,
@@ -93,8 +94,8 @@ export class GlobalRestClient {
 
     for (const [key, value] of Object.entries(_.pick(customOptions, customOptionsKeys))) {
       if (key === 'getAccessToken') {
-        this.getAccessToken = async function(): Promise<AccessToken> {
-          const accessTokenObj = await customOptions.getAccessToken();
+        this.getAccessToken = async function(postfix: string): Promise<AccessToken> {
+          const accessTokenObj = await customOptions.getAccessToken(postfix);
           return accessTokenObj ? new AccessToken(accessTokenObj.token, accessTokenObj.expireTime) : null;
         };
       } else {
@@ -113,11 +114,13 @@ export class GlobalRestClient {
     });
   }
 
-  private async getAccessToken(): Promise<AccessToken> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async getAccessToken(postfix: string): Promise<AccessToken> {
     return this.store;
   }
 
-  private async setAccessToken(accessToken: AccessToken): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async setAccessToken(accessToken: AccessToken, postfix: string): Promise<void> {
     this.store = accessToken;
   }
 
@@ -131,7 +134,7 @@ export class GlobalRestClient {
    * @returns accessToken
    */
   private async ensureAccessToken(): Promise<AccessToken> {
-    const accessToken = await this.getAccessToken();
+    const accessToken = await this.getAccessToken(this.tokenPostfix);
     if (accessToken && accessToken.isValid()) {
       return accessToken;
     }
@@ -186,7 +189,7 @@ export class GlobalRestClient {
     // 失效时间较接口返回的失效时间提前
     const expireTime = Date.now() + Math.round((expirationTime / 6) * 5);
     const accessToken = new AccessToken(token, expireTime);
-    await this.setAccessToken(accessToken);
+    await this.setAccessToken(accessToken, this.tokenPostfix);
     return accessToken;
   }
 
