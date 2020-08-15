@@ -116,6 +116,7 @@ export class CmccIotClient extends EventEmitter {
     operationType: SetGroupMemberOperationType,
     effectType?: SetGroupMemberEffectType
   ) => Promise<void>;
+  public getImei: (type: MobileNoType, id: string) => Promise<string>;
 
   /**
    * 构造函数
